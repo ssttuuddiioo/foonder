@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useSpring, animated } from 'react-spring';
-import { useDrag } from 'react-use-gesture';
+import { useDrag } from '@use-gesture/react';
 import { Star, MapPin, DollarSign, X, Heart } from 'lucide-react';
 
 const RestaurantCard = ({ restaurant, onSwipe }) => {
