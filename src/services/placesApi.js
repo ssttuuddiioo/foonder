@@ -1,5 +1,5 @@
 // Google Places API service
-const GOOGLE_PLACES_API_KEY = 'AIzaSyB1ihVW0_NxX8-2e_JsrhrvJUcnjh97mQU';
+const GOOGLE_PLACES_API_KEY = import.meta.env.VITE_GOOGLE_PLACES_API_KEY || 'your-google-places-api-key-here';
 
 // Convert ZIP code to coordinates using geocoding
 export const getCoordinatesFromZip = async (zipCode) => {
