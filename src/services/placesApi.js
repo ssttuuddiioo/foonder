@@ -1,22 +1,68 @@
-// Google Places API service
+// Google Places API service using Google Maps JavaScript API
 const GOOGLE_PLACES_API_KEY = import.meta.env.VITE_GOOGLE_PLACES_API_KEY || 'your-google-places-api-key-here';
+
+// Initialize Google Maps API
+let googleMapsLoaded = false;
+let geocoder = null;
+let placesService = null;
+
+const initializeGoogleMaps = () => {
+  return new Promise((resolve, reject) => {
+    if (googleMapsLoaded && window.google) {
+      resolve();
+      return;
+    }
+
+    // Create script element
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_PLACES_API_KEY}&libraries=places`;
+    script.async = true;
+    script.defer = true;
+    
+    script.onload = () => {
+      googleMapsLoaded = true;
+      geocoder = new window.google.maps.Geocoder();
+      
+      // Create a map element for places service (required but hidden)
+      const mapDiv = document.createElement('div');
+      mapDiv.style.display = 'none';
+      document.body.appendChild(mapDiv);
+      
+      const map = new window.google.maps.Map(mapDiv, {
+        center: { lat: 37.7749, lng: -122.4194 },
+        zoom: 13
+      });
+      
+      placesService = new window.google.maps.places.PlacesService(map);
+      resolve();
+    };
+    
+    script.onerror = () => {
+      reject(new Error('Failed to load Google Maps API'));
+    };
+    
+    document.head.appendChild(script);
+  });
+};
 
 // Convert ZIP code to coordinates using geocoding
 export const getCoordinatesFromZip = async (zipCode) => {
   try {
-    const response = await fetch(
-      `https://maps.googleapis.com/maps/api/geocode/json?address=${zipCode}&key=${GOOGLE_PLACES_API_KEY}`
-    );
-    const data = await response.json();
+    await initializeGoogleMaps();
     
-    if (data.results && data.results.length > 0) {
-      const location = data.results[0].geometry.location;
-      return {
-        lat: location.lat,
-        lng: location.lng
-      };
-    }
-    throw new Error('Could not find coordinates for ZIP code');
+    return new Promise((resolve, reject) => {
+      geocoder.geocode({ address: zipCode }, (results, status) => {
+        if (status === 'OK' && results[0]) {
+          const location = results[0].geometry.location;
+          resolve({
+            lat: location.lat(),
+            lng: location.lng()
+          });
+        } else {
+          reject(new Error('Could not find coordinates for ZIP code'));
+        }
+      });
+    });
   } catch (error) {
     console.error('Error getting coordinates:', error);
     throw error;
@@ -26,26 +72,34 @@ export const getCoordinatesFromZip = async (zipCode) => {
 // Fetch restaurants near coordinates
 export const fetchRestaurantsNearLocation = async (lat, lng, radius = 5000) => {
   try {
-    const response = await fetch(
-      `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius}&type=restaurant&key=${GOOGLE_PLACES_API_KEY}&minprice=0&maxprice=4`
-    );
-    const data = await response.json();
+    await initializeGoogleMaps();
     
-    if (data.results) {
-      // Filter restaurants with rating >= 4.2 and have required data
-      const filteredRestaurants = data.results.filter(restaurant => 
-        restaurant.rating >= 4.2 && 
-        restaurant.name && 
-        restaurant.photos && 
-        restaurant.photos.length > 0
-      );
+    return new Promise((resolve, reject) => {
+      const request = {
+        location: new window.google.maps.LatLng(lat, lng),
+        radius: radius,
+        type: ['restaurant']
+      };
       
-      // Randomly select up to 20 restaurants
-      const shuffled = filteredRestaurants.sort(() => 0.5 - Math.random());
-      return shuffled.slice(0, 20);
-    }
-    
-    return [];
+      placesService.nearbySearch(request, (results, status) => {
+        if (status === window.google.maps.places.PlacesServiceStatus.OK) {
+          // Filter restaurants with rating >= 4.2 and have required data
+          const filteredRestaurants = results.filter(restaurant => 
+            restaurant.rating >= 4.2 && 
+            restaurant.name && 
+            restaurant.photos && 
+            restaurant.photos.length > 0
+          );
+          
+          // Randomly select up to 20 restaurants
+          const shuffled = filteredRestaurants.sort(() => 0.5 - Math.random());
+          resolve(shuffled.slice(0, 20));
+        } else {
+          console.error('Places service failed:', status);
+          resolve([]);
+        }
+      });
+    });
   } catch (error) {
     console.error('Error fetching restaurants:', error);
     throw error;
@@ -76,8 +130,8 @@ export const processRestaurantData = (restaurant, userLat, userLng) => {
   const distance = calculateDistance(
     userLat, 
     userLng, 
-    restaurant.geometry.location.lat, 
-    restaurant.geometry.location.lng
+    restaurant.geometry.location.lat(), 
+    restaurant.geometry.location.lng()
   );
   
   return {
@@ -88,8 +142,8 @@ export const processRestaurantData = (restaurant, userLat, userLng) => {
     photoUrl: photoReference ? getPhotoUrl(photoReference) : null,
     vicinity: restaurant.vicinity,
     distance: `${distance} mi`,
-    lat: restaurant.geometry.location.lat,
-    lng: restaurant.geometry.location.lng,
+    lat: restaurant.geometry.location.lat(),
+    lng: restaurant.geometry.location.lng(),
     types: restaurant.types || []
   };
 }; 

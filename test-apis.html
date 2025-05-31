@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            border: 1px solid #ddd;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .success { border-color: #4CAF50; background-color: #f1f8e9; }
+        .error { border-color: #f44336; background-color: #ffebee; }
+        .pending { border-color: #ff9800; background-color: #fff3e0; }
+        button {
+            background-color: #007cba;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #005a8a;
+        }
+        .log {
+            background-color: #f5f5f5;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>API Configuration Test</h1>
+    
+    <div id="firebase-test" class="test-section pending">
+        <h3>🔥 Firebase Connection Test</h3>
+        <p>Testing Firebase Realtime Database connection...</p>
+        <button onclick="testFirebase()">Test Firebase</button>
+        <div id="firebase-log" class="log"></div>
+    </div>
+
+    <div id="places-test" class="test-section pending">
+        <h3>📍 Google Places API Test</h3>
+        <p>Testing Google Maps JavaScript API with Places Service...</p>
+        <button onclick="testPlacesAPI()">Test Places API</button>
+        <div id="places-log" class="log"></div>
+    </div>
+
+    <script type="module">
+        // Import Firebase
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
+        import { getDatabase, ref, push, onValue } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js';
+
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyAkFWON93B5GU2C4V-xDoQdTYngBx3801k",
+            authDomain: "foonder-7f9f7.firebaseapp.com",
+            databaseURL: "https://foonder-7f9f7-default-rtdb.firebaseio.com",
+            projectId: "foonder-7f9f7",
+            storageBucket: "foonder-7f9f7.firebasestorage.app",
+            messagingSenderId: "538428639841",
+            appId: "1:538428639841:web:948e2973bc08fbdea8b820"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // Test Firebase
+        window.testFirebase = async function() {
+            const logEl = document.getElementById('firebase-log');
+            const testEl = document.getElementById('firebase-test');
+            
+            logEl.textContent = 'Testing Firebase connection...\n';
+            
+            try {
+                // Test write
+                logEl.textContent += 'Attempting to write test data...\n';
+                const testRef = ref(database, 'test');
+                await push(testRef, {
+                    message: 'Test from API checker',
+                    timestamp: Date.now()
+                });
+                logEl.textContent += '✅ Write successful!\n';
+                
+                // Test read
+                logEl.textContent += 'Attempting to read data...\n';
+                onValue(testRef, (snapshot) => {
+                    const data = snapshot.val();
+                    logEl.textContent += `✅ Read successful! Found ${Object.keys(data || {}).length} records\n`;
+                    testEl.className = 'test-section success';
+                }, (error) => {
+                    logEl.textContent += `❌ Read failed: ${error.message}\n`;
+                    testEl.className = 'test-section error';
+                });
+                
+            } catch (error) {
+                logEl.textContent += `❌ Firebase test failed: ${error.message}\n`;
+                testEl.className = 'test-section error';
+            }
+        };
+
+        // Google Maps API variables
+        let googleMapsLoaded = false;
+        let placesService = null;
+
+        // Initialize Google Maps
+        const initializeGoogleMaps = () => {
+            return new Promise((resolve, reject) => {
+                if (googleMapsLoaded && window.google) {
+                    resolve();
+                    return;
+                }
+
+                const script = document.createElement('script');
+                script.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyAcXWsAP9SSZRuS1nu4UOBIqECsx0xHb_8&libraries=places';
+                script.async = true;
+                script.defer = true;
+                
+                script.onload = () => {
+                    googleMapsLoaded = true;
+                    
+                    // Create hidden map for places service
+                    const mapDiv = document.createElement('div');
+                    mapDiv.style.display = 'none';
+                    document.body.appendChild(mapDiv);
+                    
+                    const map = new window.google.maps.Map(mapDiv, {
+                        center: { lat: 37.7749, lng: -122.4194 },
+                        zoom: 13
+                    });
+                    
+                    placesService = new window.google.maps.places.PlacesService(map);
+                    resolve();
+                };
+                
+                script.onerror = () => {
+                    reject(new Error('Failed to load Google Maps API'));
+                };
+                
+                document.head.appendChild(script);
+            });
+        };
+
+        // Test Google Places API using Google Maps JavaScript API
+        window.testPlacesAPI = async function() {
+            const logEl = document.getElementById('places-log');
+            const testEl = document.getElementById('places-test');
+            
+            logEl.textContent = 'Testing Google Maps JavaScript API...\n';
+            
+            try {
+                logEl.textContent += 'Loading Google Maps API...\n';
+                await initializeGoogleMaps();
+                logEl.textContent += '✅ Google Maps API loaded successfully!\n';
+                
+                logEl.textContent += 'Testing Places Service...\n';
+                
+                const request = {
+                    location: new window.google.maps.LatLng(37.7749, -122.4194),
+                    radius: 500,
+                    type: ['restaurant']
+                };
+                
+                placesService.nearbySearch(request, (results, status) => {
+                    if (status === window.google.maps.places.PlacesServiceStatus.OK) {
+                        logEl.textContent += `✅ Places API working! Found ${results.length} restaurants\n`;
+                        logEl.textContent += `Sample restaurants:\n`;
+                        results.slice(0, 3).forEach((place, index) => {
+                            logEl.textContent += `  ${index + 1}. ${place.name} (Rating: ${place.rating || 'N/A'})\n`;
+                        });
+                        testEl.className = 'test-section success';
+                    } else {
+                        logEl.textContent += `❌ Places service failed: ${status}\n`;
+                        if (status === 'REQUEST_DENIED') {
+                            logEl.textContent += 'This usually means:\n';
+                            logEl.textContent += '- API key is invalid\n';
+                            logEl.textContent += '- Places API is not enabled\n';
+                            logEl.textContent += '- Referer restrictions are too strict\n';
+                        }
+                        testEl.className = 'test-section error';
+                    }
+                });
+                
+            } catch (error) {
+                logEl.textContent += `❌ Places API test failed: ${error.message}\n`;
+                if (error.message.includes('Failed to load')) {
+                    logEl.textContent += 'This usually means:\n';
+                    logEl.textContent += '- API key is invalid\n';
+                    logEl.textContent += '- Maps JavaScript API is not enabled\n';
+                    logEl.textContent += '- Referer restrictions are blocking the request\n';
+                }
+                testEl.className = 'test-section error';
+            }
+        };
+    </script>
+</body>
+</html> 
