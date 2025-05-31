@@ -234,12 +234,21 @@ const Session = () => {
   // Show waiting screen if not enough users or waiting for ready
   if (isWaitingForUsers()) {
     return (
-      <WaitingScreen 
-        session={session}
-        userId={userId}
-        onMarkReady={handleMarkReady}
-        onShowShareLink={() => setShowShareLink(true)}
-      />
+      <>
+        <WaitingScreen 
+          session={session}
+          userId={userId}
+          onMarkReady={handleMarkReady}
+          onShowShareLink={() => setShowShareLink(true)}
+        />
+        
+        {showShareLink && (
+          <ShareLink 
+            sessionId={sessionId}
+            onClose={() => setShowShareLink(false)}
+          />
+        )}
+      </>
     );
   }
 
@@ -270,6 +279,12 @@ const Session = () => {
 
   const currentRestaurant = getCurrentRestaurant();
   
+  console.log('🔍 About to render ShareLink:', { 
+    showShareLink, 
+    sessionId,
+    hasSessionId: !!sessionId 
+  });
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}

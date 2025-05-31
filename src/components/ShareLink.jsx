@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, Copy, Share, Check } from 'lucide-react';
 
 const ShareLink = ({ sessionId, onClose }) => {
+  console.log('🔗 ShareLink component rendering!', { sessionId });
   const [copied, setCopied] = useState(false);
   
   const shareUrl = `${window.location.origin}/session/${sessionId}`;
