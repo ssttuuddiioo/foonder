@@ -18,7 +18,7 @@ import MatchScreen from '../components/MatchScreen';
 import WaitingScreen from '../components/WaitingScreen';
 import ShareLink from '../components/ShareLink';
 import { ref, onValue } from 'firebase/database';
-import { database } from '../firebase';
+import { database } from '../config/firebase';
 
 const Session = () => {
   const { sessionId } = useParams();
