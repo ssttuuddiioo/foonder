@@ -72,36 +72,71 @@ export const getCoordinatesFromZip = async (zipCode) => {
 // Fetch restaurants near coordinates
 export const fetchRestaurantsNearLocation = async (lat, lng, radius = 5000) => {
   try {
+    console.log('🔍 Starting restaurant search for coordinates:', { lat, lng, radius });
     await initializeGoogleMaps();
     
     return new Promise((resolve, reject) => {
+      if (!placesService) {
+        console.error('❌ PlacesService not initialized');
+        reject(new Error('PlacesService not initialized'));
+        return;
+      }
+
       const request = {
         location: new window.google.maps.LatLng(lat, lng),
         radius: radius,
         type: ['restaurant']
       };
       
-      placesService.nearbySearch(request, (results, status) => {
-        if (status === window.google.maps.places.PlacesServiceStatus.OK) {
-          // Filter restaurants with rating >= 4.2 and have required data
-          const filteredRestaurants = results.filter(restaurant => 
-            restaurant.rating >= 4.2 && 
-            restaurant.name && 
-            restaurant.photos && 
-            restaurant.photos.length > 0
-          );
-          
-          // Randomly select up to 20 restaurants
-          const shuffled = filteredRestaurants.sort(() => 0.5 - Math.random());
-          resolve(shuffled.slice(0, 20));
-        } else {
-          console.error('Places service failed:', status);
-          resolve([]);
-        }
-      });
+      console.log('📍 Making Places API request:', request);
+
+      try {
+        placesService.nearbySearch(request, (results, status) => {
+          console.log('📊 Places API response:', { 
+            status, 
+            statusText: Object.keys(window.google.maps.places.PlacesServiceStatus).find(
+              key => window.google.maps.places.PlacesServiceStatus[key] === status
+            ),
+            resultsCount: results?.length 
+          });
+
+          if (status === window.google.maps.places.PlacesServiceStatus.OK) {
+            console.log('✅ Places API success! Found', results.length, 'restaurants');
+            
+            // Filter restaurants with rating >= 4.2 and have required data
+            const filteredRestaurants = results.filter(restaurant => 
+              restaurant.rating >= 4.2 && 
+              restaurant.name && 
+              restaurant.photos && 
+              restaurant.photos.length > 0
+            );
+            
+            console.log('🔸 Filtered to', filteredRestaurants.length, 'high-rated restaurants with photos');
+            
+            // Randomly select up to 20 restaurants
+            const shuffled = filteredRestaurants.sort(() => 0.5 - Math.random());
+            resolve(shuffled.slice(0, 20));
+          } else if (status === window.google.maps.places.PlacesServiceStatus.REQUEST_DENIED) {
+            console.error('❌ Places API REQUEST_DENIED - Check API key and billing');
+            reject(new Error('Places API access denied. Check API key and billing account.'));
+          } else if (status === window.google.maps.places.PlacesServiceStatus.OVER_QUERY_LIMIT) {
+            console.error('❌ Places API OVER_QUERY_LIMIT');
+            reject(new Error('Places API quota exceeded'));
+          } else if (status === window.google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
+            console.log('⚠️ No restaurants found in this area');
+            resolve([]);
+          } else {
+            console.error('❌ Places service failed with status:', status);
+            resolve([]); // Return empty array for now
+          }
+        });
+      } catch (callError) {
+        console.error('❌ Error calling nearbySearch:', callError);
+        reject(callError);
+      }
     });
   } catch (error) {
-    console.error('Error fetching restaurants:', error);
+    console.error('❌ Error fetching restaurants:', error);
     throw error;
   }
 };
