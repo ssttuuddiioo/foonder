@@ -7,6 +7,9 @@ const WaitingScreen = ({ session, userId, onMarkReady, onShowShareLink }) => {
   const isCurrentUserReady = currentUser?.ready || false;
   const allUsersReady = users.length >= 2 && users.every(user => user.ready);
 
+  // Should show ready button if there are 2+ users and current user isn't ready
+  const shouldShowReadyButton = users.length >= 2 && !isCurrentUserReady;
+
   const getStatusMessage = () => {
     if (users.length < 2) {
       return "Waiting for a friend to join...";
@@ -123,7 +126,7 @@ const WaitingScreen = ({ session, userId, onMarkReady, onShowShareLink }) => {
             </button>
           )}
 
-          {users.length >= 2 && !isCurrentUserReady && (
+          {shouldShowReadyButton && (
             <button
               onClick={onMarkReady}
               className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2"

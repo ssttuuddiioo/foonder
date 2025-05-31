@@ -17,6 +17,8 @@ import RestaurantCard from '../components/RestaurantCard';
 import MatchScreen from '../components/MatchScreen';
 import WaitingScreen from '../components/WaitingScreen';
 import ShareLink from '../components/ShareLink';
+import { ref, onValue } from 'firebase/database';
+import { database } from '../firebase';
 
 const Session = () => {
   const { sessionId } = useParams();
@@ -48,12 +50,34 @@ const Session = () => {
     // Join session and listen for updates
     const joinAndListen = async () => {
       try {
+        // First check if session exists
+        const sessionSnapshot = await new Promise((resolve) => {
+          const sessionRef = ref(database, `sessions/${sessionId}`);
+          onValue(sessionRef, resolve, { onlyOnce: true });
+        });
+        
+        const sessionData = sessionSnapshot.val();
+        if (!sessionData) {
+          setError('Session not found or expired');
+          setLoading(false);
+          return;
+        }
+
+        // Join the session
         await joinSession(sessionId, userId);
         
         const unsubscribe = getSession(sessionId, (sessionData) => {
           if (sessionData) {
             setSession(sessionData);
             setLoading(false);
+            
+            // Debug logging
+            console.log('Session updated:', {
+              sessionId,
+              userId,
+              users: sessionData.users ? Object.keys(sessionData.users) : [],
+              userCount: sessionData.users ? Object.keys(sessionData.users).length : 0
+            });
           } else {
             setError('Session not found or expired');
             setLoading(false);
@@ -76,6 +100,19 @@ const Session = () => {
       });
     };
   }, [sessionId, userId]);
+
+  useEffect(() => {
+    if (session) {
+      console.log('🔍 Session Debug Info:', {
+        sessionId,
+        currentUserId: userId,
+        users: session.users ? Object.keys(session.users) : [],
+        userDetails: session.users,
+        userCount: session.users ? Object.keys(session.users).length : 0,
+        status: session.status
+      });
+    }
+  }, [session, userId, sessionId]);
 
   const handleSwipe = async (direction) => {
     if (!session || !userId || currentRestaurantIndex >= session.restaurants.length) return;
