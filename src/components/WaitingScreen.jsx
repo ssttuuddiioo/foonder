@@ -116,15 +116,18 @@ const WaitingScreen = ({ session, userId, onMarkReady, onShowShareLink }) => {
 
         {/* Action Buttons */}
         <div className="space-y-3">
-          {users.length < 2 && (
-            <button
-              onClick={onShowShareLink}
-              className="w-full bg-primary-500 hover:bg-primary-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2"
-            >
-              <Share2 className="w-5 h-5" />
-              <span>Share Session Link</span>
-            </button>
-          )}
+          {/* Always show share button */}
+          <button
+            onClick={onShowShareLink}
+            className={`w-full font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 ${
+              users.length < 2 
+                ? 'bg-primary-500 hover:bg-primary-600 text-white' 
+                : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300'
+            }`}
+          >
+            <Share2 className="w-5 h-5" />
+            <span>{users.length < 2 ? 'Share Session Link' : 'Share Link Again'}</span>
+          </button>
 
           {shouldShowReadyButton && (
             <button
