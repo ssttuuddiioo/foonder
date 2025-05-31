@@ -1,10 +1,9 @@
-// Google Places API service using Google Maps JavaScript API
+// Google Places API service using the new Places API (New)
 const GOOGLE_PLACES_API_KEY = import.meta.env.VITE_GOOGLE_PLACES_API_KEY || 'your-google-places-api-key-here';
 
-// Initialize Google Maps API
+// Initialize Google Maps API for geocoding only
 let googleMapsLoaded = false;
 let geocoder = null;
-let placesService = null;
 
 const initializeGoogleMaps = () => {
   return new Promise((resolve, reject) => {
@@ -13,27 +12,15 @@ const initializeGoogleMaps = () => {
       return;
     }
 
-    // Create script element
+    // Create script element - only need geocoding, not places
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_PLACES_API_KEY}&libraries=places`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_PLACES_API_KEY}&libraries=geocoding`;
     script.async = true;
     script.defer = true;
     
     script.onload = () => {
       googleMapsLoaded = true;
       geocoder = new window.google.maps.Geocoder();
-      
-      // Create a map element for places service (required but hidden)
-      const mapDiv = document.createElement('div');
-      mapDiv.style.display = 'none';
-      document.body.appendChild(mapDiv);
-      
-      const map = new window.google.maps.Map(mapDiv, {
-        center: { lat: 37.7749, lng: -122.4194 },
-        zoom: 13
-      });
-      
-      placesService = new window.google.maps.places.PlacesService(map);
       resolve();
     };
     
@@ -69,81 +56,73 @@ export const getCoordinatesFromZip = async (zipCode) => {
   }
 };
 
-// Fetch restaurants near coordinates
+// Fetch restaurants using the new Places API (New)
 export const fetchRestaurantsNearLocation = async (lat, lng, radius = 5000) => {
   try {
     console.log('🔍 Starting restaurant search for coordinates:', { lat, lng, radius });
-    await initializeGoogleMaps();
     
-    return new Promise((resolve, reject) => {
-      if (!placesService) {
-        console.error('❌ PlacesService not initialized');
-        reject(new Error('PlacesService not initialized'));
-        return;
-      }
-
-      const request = {
-        location: new window.google.maps.LatLng(lat, lng),
-        radius: radius,
-        type: ['restaurant']
-      };
-      
-      console.log('📍 Making Places API request:', request);
-
-      try {
-        placesService.nearbySearch(request, (results, status) => {
-          console.log('📊 Places API response:', { 
-            status, 
-            statusText: Object.keys(window.google.maps.places.PlacesServiceStatus).find(
-              key => window.google.maps.places.PlacesServiceStatus[key] === status
-            ),
-            resultsCount: results?.length 
-          });
-
-          if (status === window.google.maps.places.PlacesServiceStatus.OK) {
-            console.log('✅ Places API success! Found', results.length, 'restaurants');
-            
-            // Filter restaurants with rating >= 4.2 and have required data
-            const filteredRestaurants = results.filter(restaurant => 
-              restaurant.rating >= 4.2 && 
-              restaurant.name && 
-              restaurant.photos && 
-              restaurant.photos.length > 0
-            );
-            
-            console.log('🔸 Filtered to', filteredRestaurants.length, 'high-rated restaurants with photos');
-            
-            // Randomly select up to 20 restaurants
-            const shuffled = filteredRestaurants.sort(() => 0.5 - Math.random());
-            resolve(shuffled.slice(0, 20));
-          } else if (status === window.google.maps.places.PlacesServiceStatus.REQUEST_DENIED) {
-            console.error('❌ Places API REQUEST_DENIED - Check API key and billing');
-            reject(new Error('Places API access denied. Check API key and billing account.'));
-          } else if (status === window.google.maps.places.PlacesServiceStatus.OVER_QUERY_LIMIT) {
-            console.error('❌ Places API OVER_QUERY_LIMIT');
-            reject(new Error('Places API quota exceeded'));
-          } else if (status === window.google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
-            console.log('⚠️ No restaurants found in this area');
-            resolve([]);
-          } else {
-            console.error('❌ Places service failed with status:', status);
-            resolve([]); // Return empty array for now
+    // Use the new Places API (New) with HTTP requests
+    const response = await fetch('https://places.googleapis.com/v1/places:searchNearby', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY,
+        'X-Goog-FieldMask': 'places.id,places.displayName,places.rating,places.priceLevel,places.photos,places.formattedAddress,places.location,places.types'
+      },
+      body: JSON.stringify({
+        includedTypes: ['restaurant'],
+        maxResultCount: 20,
+        locationRestriction: {
+          circle: {
+            center: {
+              latitude: lat,
+              longitude: lng
+            },
+            radius: radius
           }
-        });
-      } catch (callError) {
-        console.error('❌ Error calling nearbySearch:', callError);
-        reject(callError);
-      }
+        }
+      })
     });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Places API error:', response.status, errorText);
+      throw new Error(`Places API error: ${response.status} ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('📊 Places API response:', data);
+
+    if (!data.places || data.places.length === 0) {
+      console.log('⚠️ No restaurants found in this area');
+      return [];
+    }
+
+    // Filter restaurants with rating >= 4.2 and have required data
+    const filteredRestaurants = data.places.filter(restaurant => 
+      restaurant.rating >= 4.2 && 
+      restaurant.displayName && 
+      restaurant.photos && 
+      restaurant.photos.length > 0
+    );
+    
+    console.log('✅ Found', data.places.length, 'restaurants, filtered to', filteredRestaurants.length, 'high-rated restaurants with photos');
+    
+    // Randomly shuffle and return up to 20 restaurants
+    const shuffled = filteredRestaurants.sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, 20);
+
   } catch (error) {
     console.error('❌ Error fetching restaurants:', error);
     throw error;
   }
 };
 
-// Get photo URL from photo reference
-export const getPhotoUrl = (photoReference, maxWidth = 400) => {
-  return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${maxWidth}&photoreference=${photoReference}&key=${GOOGLE_PLACES_API_KEY}`;
+// Get photo URL from the new Places API photo format
+export const getPhotoUrl = (photo, maxWidth = 400) => {
+  if (!photo || !photo.name) return null;
+  
+  return `https://places.googleapis.com/v1/${photo.name}/media?maxWidthPx=${maxWidth}&key=${GOOGLE_PLACES_API_KEY}`;
 };
 
 // Get distance between two coordinates (Haversine formula)
@@ -159,26 +138,26 @@ export const calculateDistance = (lat1, lng1, lat2, lng2) => {
   return (R * c).toFixed(1); // Distance in miles
 };
 
-// Process restaurant data for the app
+// Process restaurant data for the app (updated for new API format)
 export const processRestaurantData = (restaurant, userLat, userLng) => {
-  const photoReference = restaurant.photos?.[0]?.photo_reference;
+  const photo = restaurant.photos?.[0];
   const distance = calculateDistance(
     userLat, 
     userLng, 
-    restaurant.geometry.location.lat(), 
-    restaurant.geometry.location.lng()
+    restaurant.location.latitude, 
+    restaurant.location.longitude
   );
   
   return {
-    id: restaurant.place_id,
-    name: restaurant.name,
+    id: restaurant.id,
+    name: restaurant.displayName?.text || restaurant.displayName,
     rating: restaurant.rating,
-    priceLevel: restaurant.price_level || 1,
-    photoUrl: photoReference ? getPhotoUrl(photoReference) : null,
-    vicinity: restaurant.vicinity,
+    priceLevel: restaurant.priceLevel || 1,
+    photoUrl: photo ? getPhotoUrl(photo) : null,
+    vicinity: restaurant.formattedAddress,
     distance: `${distance} mi`,
-    lat: restaurant.geometry.location.lat(),
-    lng: restaurant.geometry.location.lng(),
+    lat: restaurant.location.latitude,
+    lng: restaurant.location.longitude,
     types: restaurant.types || []
   };
 }; 
