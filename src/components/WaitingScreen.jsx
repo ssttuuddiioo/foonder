@@ -13,6 +13,9 @@ const WaitingScreen = ({ session, userId, onMarkReady }) => {
   const shouldShowReadyButton = users.length >= 2 && !isCurrentUserReady;
   const shareUrl = `${window.location.origin}/session/${session?.id}`;
 
+  // Determine if this user is the session creator (first user to join)
+  const isSessionCreator = users.length > 0 && users[0]?.id === userId;
+
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(shareUrl);
@@ -38,22 +41,44 @@ const WaitingScreen = ({ session, userId, onMarkReady }) => {
   };
 
   const getMainMessage = () => {
-    if (users.length < 2) {
-      return "Share the link to get started";
-    } else if (!allUsersReady) {
-      return "Ready to find your match?";
+    if (isSessionCreator) {
+      if (users.length < 2) {
+        return "Share the link to get started";
+      } else if (!allUsersReady) {
+        return "Ready to find your match?";
+      } else {
+        return "Starting your session...";
+      }
     } else {
-      return "Starting your session...";
+      // Message for people joining via link
+      if (!isCurrentUserReady) {
+        return "Ready to find some great food?";
+      } else if (!allUsersReady) {
+        return "Waiting for your friend...";
+      } else {
+        return "Starting your session...";
+      }
     }
   };
 
   const getSubMessage = () => {
-    if (users.length < 2) {
-      return "Send this link to a friend and start swiping together";
-    } else if (!allUsersReady) {
-      return "Both of you need to mark ready to begin";
+    if (isSessionCreator) {
+      if (users.length < 2) {
+        return "Send this link to a friend and start swiping together";
+      } else if (!allUsersReady) {
+        return "Both of you need to mark ready to begin";
+      } else {
+        return "Loading restaurants...";
+      }
     } else {
-      return "Loading restaurants...";
+      // Message for people joining via link
+      if (!isCurrentUserReady) {
+        return `Somebody wants to meet up and eat some good food with you around ${session?.zipCode || 'this area'}. When you're ready, hit 'Ready' and remember to match the restaurants you like!`;
+      } else if (!allUsersReady) {
+        return "Waiting for your friend to get ready...";
+      } else {
+        return "Loading restaurants...";
+      }
     }
   };
 
@@ -86,42 +111,57 @@ const WaitingScreen = ({ session, userId, onMarkReady }) => {
             </div>
           </div>
 
-          {/* Share Link Section */}
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-semibold text-gray-900">Share with a friend</h3>
-              <span className="text-sm text-red-600 font-medium">👫 {users.length}/2 joined</span>
+          {/* Share Link Section - Only show to session creator */}
+          {isSessionCreator && (
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold text-gray-900">Share with a friend</h3>
+                <span className="text-sm text-red-600 font-medium">👫 {users.length}/2 joined</span>
+              </div>
+              
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  value={shareUrl}
+                  readOnly
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-sm font-mono"
+                />
+                <button
+                  onClick={handleCopyLink}
+                  className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
+                    copied
+                      ? 'bg-green-100 text-green-700 border border-green-200'
+                      : 'bg-red-500 hover:bg-red-600 text-white'
+                  }`}
+                >
+                  {copied ? (
+                    <>
+                      <Check className="w-5 h-5" />
+                      <span className="hidden sm:inline">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-5 h-5" />
+                      <span className="hidden sm:inline">Copy</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
-            
-            <div className="flex gap-3">
-              <input
-                type="text"
-                value={shareUrl}
-                readOnly
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-sm font-mono"
-              />
-              <button
-                onClick={handleCopyLink}
-                className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
-                  copied
-                    ? 'bg-green-100 text-green-700 border border-green-200'
-                    : 'bg-red-500 hover:bg-red-600 text-white'
-                }`}
-              >
-                {copied ? (
-                  <>
-                    <Check className="w-5 h-5" />
-                    <span className="hidden sm:inline">Copied!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-5 h-5" />
-                    <span className="hidden sm:inline">Copy</span>
-                  </>
-                )}
-              </button>
+          )}
+
+          {/* Welcome message for link joiners */}
+          {!isSessionCreator && users.length >= 2 && (
+            <div className="mb-6 p-4 bg-blue-50 rounded-xl">
+              <h3 className="font-semibold text-blue-900 mb-2">How this works</h3>
+              <div className="text-sm text-blue-700 space-y-1">
+                <p>• You'll both swipe through restaurant cards</p>
+                <p>• Swipe right (❤️) for places you'd like to try</p>
+                <p>• Swipe left (✕) for places you'll skip</p>
+                <p>• When you both like the same place, it's a match!</p>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Users Status */}
           <div className="space-y-3">

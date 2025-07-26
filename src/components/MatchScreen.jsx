@@ -1,4 +1,4 @@
-import { Star, MapPin, DollarSign, ExternalLink, RotateCcw, Heart } from 'lucide-react';
+import { Star, MapPin, DollarSign, ExternalLink, RotateCcw, Heart, Phone, Globe } from 'lucide-react';
 
 const MatchScreen = ({ match, onStartOver, loading }) => {
   const restaurant = match.restaurant;
@@ -8,7 +8,19 @@ const MatchScreen = ({ match, onStartOver, loading }) => {
   };
 
   const getGoogleMapsUrl = () => {
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(restaurant.name)}&query_place_id=${restaurant.id}`;
+    return restaurant.googleMapsUri || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(restaurant.name)}&query_place_id=${restaurant.id}`;
+  };
+
+  const handleCallRestaurant = () => {
+    if (restaurant.phoneNumber) {
+      window.open(`tel:${restaurant.phoneNumber}`);
+    }
+  };
+
+  const handleVisitWebsite = () => {
+    if (restaurant.website) {
+      window.open(restaurant.website, '_blank');
+    }
   };
 
   return (
@@ -88,7 +100,30 @@ const MatchScreen = ({ match, onStartOver, loading }) => {
               </p>
             )}
 
-            {/* Action Buttons */}
+            {/* Quick Actions */}
+            <div className="grid grid-cols-2 gap-3 mb-6">
+              {restaurant.phoneNumber && (
+                <button
+                  onClick={handleCallRestaurant}
+                  className="flex items-center justify-center gap-2 bg-green-50 hover:bg-green-100 text-green-700 font-medium py-3 px-4 rounded-lg transition-colors duration-200"
+                >
+                  <Phone className="w-5 h-5" />
+                  <span>Call</span>
+                </button>
+              )}
+              
+              {restaurant.website && (
+                <button
+                  onClick={handleVisitWebsite}
+                  className="flex items-center justify-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium py-3 px-4 rounded-lg transition-colors duration-200"
+                >
+                  <Globe className="w-5 h-5" />
+                  <span>Website</span>
+                </button>
+              )}
+            </div>
+
+            {/* Main Action Buttons */}
             <div className="space-y-3">
               <a
                 href={getGoogleMapsUrl()}
@@ -97,7 +132,7 @@ const MatchScreen = ({ match, onStartOver, loading }) => {
                 className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-4 px-6 rounded-xl transition-colors duration-200 flex items-center justify-center gap-3"
               >
                 <ExternalLink className="w-6 h-6" />
-                <span className="text-lg">View on Google Maps</span>
+                <span className="text-lg">Open in Maps</span>
               </a>
 
               <button

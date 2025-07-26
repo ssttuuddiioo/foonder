@@ -113,13 +113,14 @@ const Session = () => {
   }, [session, userId, sessionId]);
 
   const handleSwipe = async (direction) => {
-    if (!session || !userId || currentRestaurantIndex >= session.restaurants.length) return;
-
-    const restaurant = session.restaurants[currentRestaurantIndex];
+    if (!session || !userId) return;
+    
+    const restaurant = getCurrentRestaurant();
+    if (!restaurant) return;
     
     try {
       await recordSwipe(sessionId, userId, restaurant.id, direction);
-      setCurrentRestaurantIndex(prev => prev + 1);
+      // currentRestaurantIndex will be updated automatically via Firebase listener
     } catch (error) {
       console.error('Error recording swipe:', error);
     }
@@ -156,8 +157,14 @@ const Session = () => {
   };
 
   const getCurrentRestaurant = () => {
-    if (!session || currentRestaurantIndex >= session.restaurants.length) return null;
-    return session.restaurants[currentRestaurantIndex];
+    if (!session || !session.users || !session.users[userId]) return null;
+    
+    const currentUser = session.users[userId];
+    const userDeck = currentUser.personalDeck || session.restaurants;
+    const userIndex = currentUser.currentIndex || 0;
+    
+    if (userIndex >= userDeck.length) return null;
+    return userDeck[userIndex];
   };
 
   const getUsers = () => {
@@ -180,7 +187,13 @@ const Session = () => {
   };
 
   const isOutOfRestaurants = () => {
-    return session && currentRestaurantIndex >= session.restaurants.length;
+    if (!session || !session.users || !session.users[userId]) return false;
+    
+    const currentUser = session.users[userId];
+    const userDeck = currentUser.personalDeck || session.restaurants;
+    const userIndex = currentUser.currentIndex || 0;
+    
+    return userIndex >= userDeck.length;
   };
 
   if (loading) {
@@ -275,7 +288,10 @@ const Session = () => {
       <div className="bg-white shadow-sm p-4">
         <div className="max-w-md mx-auto flex items-center justify-center">
           <div className="text-sm text-gray-600">
-            {currentRestaurantIndex + 1} of {session.restaurants.length}
+            {session.users && session.users[userId] ? 
+              `${(session.users[userId].currentIndex || 0) + 1} of ${(session.users[userId].personalDeck || session.restaurants).length}` :
+              `${currentRestaurantIndex + 1} of ${session.restaurants.length}`
+            }
           </div>
         </div>
       </div>

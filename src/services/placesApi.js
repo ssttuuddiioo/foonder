@@ -67,7 +67,7 @@ export const fetchRestaurantsNearLocation = async (lat, lng, radius = 5000) => {
       headers: {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY,
-        'X-Goog-FieldMask': 'places.id,places.displayName,places.rating,places.priceLevel,places.photos,places.formattedAddress,places.location,places.types'
+        'X-Goog-FieldMask': 'places.id,places.displayName,places.rating,places.priceLevel,places.photos,places.formattedAddress,places.location,places.types,places.nationalPhoneNumber,places.internationalPhoneNumber,places.websiteUri,places.googleMapsUri'
       },
       body: JSON.stringify({
         includedTypes: ['restaurant'],
@@ -158,6 +158,9 @@ export const processRestaurantData = (restaurant, userLat, userLng) => {
     distance: `${distance} mi`,
     lat: restaurant.location.latitude,
     lng: restaurant.location.longitude,
-    types: restaurant.types || []
+    types: restaurant.types || [],
+    phoneNumber: restaurant.nationalPhoneNumber || restaurant.internationalPhoneNumber,
+    website: restaurant.websiteUri,
+    googleMapsUri: restaurant.googleMapsUri
   };
 }; 
