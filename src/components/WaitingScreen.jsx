@@ -1,169 +1,216 @@
-import { Users, Share2, CheckCircle, Clock } from 'lucide-react';
+import { useState } from 'react';
+import { Users, Share2, CheckCircle, Clock, Copy, Check, Heart, MapPin } from 'lucide-react';
 
-const WaitingScreen = ({ session, userId, onMarkReady, onShowShareLink }) => {
+const WaitingScreen = ({ session, userId, onMarkReady }) => {
+  const [copied, setCopied] = useState(false);
+  
   const users = session?.users ? Object.values(session.users) : [];
   const currentUser = users.find(user => user.id === userId);
   const otherUsers = users.filter(user => user.id !== userId);
   const isCurrentUserReady = currentUser?.ready || false;
   const allUsersReady = users.length >= 2 && users.every(user => user.ready);
 
-  // Should show ready button if there are 2+ users and current user isn't ready
   const shouldShowReadyButton = users.length >= 2 && !isCurrentUserReady;
+  const shareUrl = `${window.location.origin}/session/${session?.id}`;
 
-  const getStatusMessage = () => {
-    if (users.length < 2) {
-      return "Waiting for a friend to join...";
-    } else if (!allUsersReady) {
-      return "Waiting for everyone to be ready...";
-    } else {
-      return "Starting session...";
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy link:', error);
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = shareUrl;
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        console.error('Fallback copy failed:', err);
+      }
+      document.body.removeChild(textArea);
     }
   };
 
-  const getStatusIcon = () => {
+  const getMainMessage = () => {
     if (users.length < 2) {
-      return <Users className="w-16 h-16 text-primary-500 animate-pulse-soft" />;
+      return "Share the link to get started";
     } else if (!allUsersReady) {
-      return <Clock className="w-16 h-16 text-primary-500 animate-pulse-soft" />;
+      return "Ready to find your match?";
     } else {
-      return <CheckCircle className="w-16 h-16 text-green-500" />;
+      return "Starting your session...";
+    }
+  };
+
+  const getSubMessage = () => {
+    if (users.length < 2) {
+      return "Send this link to a friend and start swiping together";
+    } else if (!allUsersReady) {
+      return "Both of you need to mark ready to begin";
+    } else {
+      return "Loading restaurants...";
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="max-w-md w-full text-center">
-        {/* Status Icon */}
-        <div className="flex justify-center mb-6">
-          {getStatusIcon()}
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
+      <div className="max-w-lg w-full">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center mb-6">
+            <div className="bg-red-500 p-4 rounded-full">
+              <Heart className="w-10 h-10 text-white" />
+            </div>
+          </div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">
+            {getMainMessage()}
+          </h1>
+          <p className="text-xl text-gray-600">
+            {getSubMessage()}
+          </p>
         </div>
 
-        {/* Status Message */}
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
-          {getStatusMessage()}
-        </h1>
+        {/* Session Info Card */}
+        <div className="bg-white rounded-2xl shadow-xl p-8 mb-6">
+          {/* Location Info */}
+          <div className="flex items-center gap-3 mb-6 p-4 bg-red-50 rounded-xl">
+            <MapPin className="w-6 h-6 text-red-500" />
+            <div>
+              <p className="font-semibold text-gray-900">{session?.zipCode || 'Your Location'}</p>
+              <p className="text-sm text-gray-600">{session?.restaurants?.length || 0} restaurants found • 4.2+ stars</p>
+            </div>
+          </div>
 
-        {/* Session Info */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-          <div className="mb-4">
-            <h3 className="font-semibold text-gray-900 mb-2">Session Details</h3>
-            <div className="text-sm text-gray-600 space-y-1">
-              <p>ZIP Code: <span className="font-mono font-semibold">{session?.zipCode}</span></p>
-              <p>Restaurants: <span className="font-semibold">{session?.restaurants?.length || 0}</span> found</p>
-              <p>Rating: <span className="font-semibold">4.2+ stars</span></p>
+          {/* Share Link Section */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-semibold text-gray-900">Share with a friend</h3>
+              <span className="text-sm text-red-600 font-medium">👫 {users.length}/2 joined</span>
+            </div>
+            
+            <div className="flex gap-3">
+              <input
+                type="text"
+                value={shareUrl}
+                readOnly
+                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-sm font-mono"
+              />
+              <button
+                onClick={handleCopyLink}
+                className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
+                  copied
+                    ? 'bg-green-100 text-green-700 border border-green-200'
+                    : 'bg-red-500 hover:bg-red-600 text-white'
+                }`}
+              >
+                {copied ? (
+                  <>
+                    <Check className="w-5 h-5" />
+                    <span className="hidden sm:inline">Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-5 h-5" />
+                    <span className="hidden sm:inline">Copy</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
 
           {/* Users Status */}
-          <div className="border-t pt-4">
-            <h4 className="font-semibold text-gray-900 mb-3">
-              Users ({users.length}/2)
-            </h4>
-            <div className="space-y-2">
-              {/* Current User */}
-              <div className="flex items-center justify-between p-2 bg-primary-50 rounded-lg">
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
-                  <span className="text-sm font-medium text-gray-700">You</span>
+          <div className="space-y-3">
+            <h4 className="font-semibold text-gray-900">Participants</h4>
+            
+            {/* Current User */}
+            <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                <span className="font-medium text-gray-900">You</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {isCurrentUserReady ? (
+                  <>
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                    <span className="text-sm text-green-600 font-medium">Ready</span>
+                  </>
+                ) : (
+                  <>
+                    <Clock className="w-5 h-5 text-gray-400" />
+                    <span className="text-sm text-gray-500">Not ready</span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Other Users */}
+            {otherUsers.map((user, index) => (
+              <div key={user.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  <span className="font-medium text-gray-900">Friend {index + 1}</span>
                 </div>
-                <div className="flex items-center space-x-1">
-                  {isCurrentUserReady ? (
-                    <CheckCircle className="w-4 h-4 text-green-500" />
+                <div className="flex items-center gap-2">
+                  {user.ready ? (
+                    <>
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+                      <span className="text-sm text-green-600 font-medium">Ready</span>
+                    </>
                   ) : (
-                    <Clock className="w-4 h-4 text-gray-400" />
+                    <>
+                      <Clock className="w-5 h-5 text-gray-400" />
+                      <span className="text-sm text-gray-500">Not ready</span>
+                    </>
                   )}
-                  <span className="text-xs text-gray-600">
-                    {isCurrentUserReady ? 'Ready' : 'Not ready'}
-                  </span>
                 </div>
               </div>
+            ))}
 
-              {/* Other Users */}
-              {otherUsers.map((user, index) => (
-                <div key={user.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="text-sm font-medium text-gray-700">
-                      Friend {index + 1}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    {user.ready ? (
-                      <CheckCircle className="w-4 h-4 text-green-500" />
-                    ) : (
-                      <Clock className="w-4 h-4 text-gray-400" />
-                    )}
-                    <span className="text-xs text-gray-600">
-                      {user.ready ? 'Ready' : 'Not ready'}
-                    </span>
-                  </div>
+            {/* Empty Slots */}
+            {users.length < 2 && (
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
+                  <span className="text-gray-500">Waiting for friend...</span>
                 </div>
-              ))}
-
-              {/* Empty slots */}
-              {Array.from({ length: Math.max(0, 2 - users.length) }).map((_, index) => (
-                <div key={`empty-${index}`} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg opacity-50">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                    <span className="text-sm text-gray-500">Waiting for friend...</span>
-                  </div>
-                  <Clock className="w-4 h-4 text-gray-300" />
-                </div>
-              ))}
-            </div>
+                <Share2 className="w-5 h-5 text-gray-300" />
+              </div>
+            )}
           </div>
-        </div>
 
-        {/* Action Buttons */}
-        <div className="space-y-3">
-          {/* Always show share button */}
-          <button
-            onClick={onShowShareLink}
-            className={`w-full font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 ${
-              users.length < 2 
-                ? 'bg-primary-500 hover:bg-primary-600 text-white' 
-                : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300'
-            }`}
-          >
-            <Share2 className="w-5 h-5" />
-            <span>{users.length < 2 ? 'Share Session Link' : 'Share Link Again'}</span>
-          </button>
-
+          {/* Ready Button */}
           {shouldShowReadyButton && (
-            <button
-              onClick={onMarkReady}
-              className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2"
-            >
-              <CheckCircle className="w-5 h-5" />
-              <span>I'm Ready!</span>
-            </button>
+            <div className="mt-6 pt-6 border-t border-gray-100">
+              <button
+                onClick={onMarkReady}
+                className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-4 px-6 rounded-xl transition-colors duration-200 flex items-center justify-center gap-3"
+              >
+                <CheckCircle className="w-6 h-6" />
+                <span className="text-lg">I'm Ready to Swipe!</span>
+              </button>
+            </div>
           )}
 
+          {/* Waiting Message */}
           {users.length >= 2 && isCurrentUserReady && !allUsersReady && (
-            <div className="text-center">
-              <div className="inline-flex items-center space-x-2 bg-green-100 text-green-700 px-4 py-2 rounded-lg">
-                <CheckCircle className="w-5 h-5" />
-                <span className="font-medium">You're ready! Waiting for others...</span>
+            <div className="mt-6 pt-6 border-t border-gray-100">
+              <div className="flex items-center justify-center gap-3 bg-green-100 text-green-700 px-6 py-4 rounded-xl">
+                <CheckCircle className="w-6 h-6" />
+                <span className="font-medium text-lg">You're ready! Waiting for others...</span>
               </div>
             </div>
           )}
-        </div>
-
-        {/* Instructions */}
-        <div className="mt-8 text-center">
-          <h4 className="font-semibold text-gray-900 mb-2">How it works</h4>
-          <div className="text-sm text-gray-600 space-y-1">
-            <p>1. Share the link with a friend</p>
-            <p>2. Both mark yourselves as ready</p>
-            <p>3. Swipe on restaurant cards</p>
-            <p>4. Get matched when you both like the same place!</p>
-          </div>
         </div>
 
         {/* Footer */}
-        <div className="mt-8 text-center">
-          <p className="text-xs text-gray-500">
-            Session expires in 24 hours
+        <div className="text-center">
+          <p className="text-sm text-gray-500">
+            Session expires in 24 hours • No personal data stored
           </p>
         </div>
       </div>

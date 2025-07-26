@@ -16,7 +16,6 @@ import {
 import RestaurantCard from '../components/RestaurantCard';
 import MatchScreen from '../components/MatchScreen';
 import WaitingScreen from '../components/WaitingScreen';
-import ShareLink from '../components/ShareLink';
 import { ref, onValue } from 'firebase/database';
 import { database } from '../config/firebase';
 
@@ -30,7 +29,6 @@ const Session = () => {
   const [currentRestaurantIndex, setCurrentRestaurantIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [showShareLink, setShowShareLink] = useState(false);
 
   useEffect(() => {
     // Get or generate user ID
@@ -187,9 +185,9 @@ const Session = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading session...</p>
         </div>
       </div>
@@ -198,12 +196,12 @@ const Session = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
         <div className="text-center">
           <p className="text-red-600 mb-4">{error}</p>
           <button
             onClick={() => navigate('/')}
-            className="bg-primary-500 hover:bg-primary-600 text-white px-6 py-2 rounded-lg"
+            className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg"
           >
             Go Home
           </button>
@@ -214,7 +212,7 @@ const Session = () => {
 
   if (!session) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <p className="text-gray-600">Session not found</p>
       </div>
     );
@@ -234,21 +232,11 @@ const Session = () => {
   // Show waiting screen if not enough users or waiting for ready
   if (isWaitingForUsers()) {
     return (
-      <>
-        <WaitingScreen 
-          session={session}
-          userId={userId}
-          onMarkReady={handleMarkReady}
-          onShowShareLink={() => setShowShareLink(true)}
-        />
-        
-        {showShareLink && (
-          <ShareLink 
-            sessionId={sessionId}
-            onClose={() => setShowShareLink(false)}
-          />
-        )}
-      </>
+      <WaitingScreen 
+        session={session}
+        userId={userId}
+        onMarkReady={handleMarkReady}
+      />
     );
   }
 
@@ -268,7 +256,7 @@ const Session = () => {
           <button
             onClick={handleStartOver}
             disabled={loading}
-            className="bg-primary-500 hover:bg-primary-600 disabled:bg-gray-300 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200"
+            className="bg-red-500 hover:bg-red-600 disabled:bg-gray-300 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200"
           >
             {loading ? 'Loading New Restaurants...' : 'Try New Restaurants'}
           </button>
@@ -279,26 +267,16 @@ const Session = () => {
 
   const currentRestaurant = getCurrentRestaurant();
   
-  console.log('🔍 About to render ShareLink:', { 
-    showShareLink, 
-    sessionId,
-    hasSessionId: !!sessionId 
-  });
+
 
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
       <div className="bg-white shadow-sm p-4">
-        <div className="max-w-md mx-auto flex items-center justify-between">
+        <div className="max-w-md mx-auto flex items-center justify-center">
           <div className="text-sm text-gray-600">
             {currentRestaurantIndex + 1} of {session.restaurants.length}
           </div>
-          <button
-            onClick={() => setShowShareLink(true)}
-            className="text-primary-500 hover:text-primary-600 text-sm font-medium"
-          >
-            Share Link
-          </button>
         </div>
       </div>
 
@@ -339,13 +317,7 @@ const Session = () => {
         </div>
       </div>
 
-      {/* Share Link Modal */}
-      {showShareLink && (
-        <ShareLink 
-          sessionId={sessionId}
-          onClose={() => setShowShareLink(false)}
-        />
-      )}
+
     </div>
   );
 };
