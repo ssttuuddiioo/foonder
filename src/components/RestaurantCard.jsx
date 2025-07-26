@@ -133,16 +133,16 @@ const RestaurantCard = ({ restaurant, onSwipe }) => {
       <div className="flex justify-center space-x-8 mt-6">
         <button
           onClick={() => handleButtonSwipe('left')}
-          className="w-14 h-14 bg-white border-2 border-red-200 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl hover:border-red-300 transition-all duration-200 active:scale-95"
+          className="w-14 h-14 bg-white border-2 border-gray-200 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl hover:border-gray-300 transition-all duration-200 active:scale-95"
         >
-          <X className="w-6 h-6 text-red-500" />
+          <X className="w-6 h-6 text-gray-500" />
         </button>
         
         <button
           onClick={() => handleButtonSwipe('right')}
-          className="w-14 h-14 bg-white border-2 border-green-200 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl hover:border-green-300 transition-all duration-200 active:scale-95"
+          className="w-14 h-14 bg-white border-2 border-red-200 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl hover:border-red-300 transition-all duration-200 active:scale-95"
         >
-          <Heart className="w-6 h-6 text-green-500" />
+          <Heart className="w-6 h-6 text-red-500" />
         </button>
       </div>
       
