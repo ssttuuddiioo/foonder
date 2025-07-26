@@ -148,7 +148,7 @@ export const processRestaurantData = (restaurant, userLat, userLng) => {
     restaurant.location.longitude
   );
   
-  return {
+  const processedData = {
     id: restaurant.id,
     name: restaurant.displayName?.text || restaurant.displayName,
     rating: restaurant.rating,
@@ -158,9 +158,22 @@ export const processRestaurantData = (restaurant, userLat, userLng) => {
     distance: `${distance} mi`,
     lat: restaurant.location.latitude,
     lng: restaurant.location.longitude,
-    types: restaurant.types || [],
-    phoneNumber: restaurant.nationalPhoneNumber || restaurant.internationalPhoneNumber,
-    website: restaurant.websiteUri,
-    googleMapsUri: restaurant.googleMapsUri
+    types: restaurant.types || []
   };
+
+  // Only add optional fields if they have values (Firebase doesn't allow undefined)
+  const phoneNumber = restaurant.nationalPhoneNumber || restaurant.internationalPhoneNumber;
+  if (phoneNumber) {
+    processedData.phoneNumber = phoneNumber;
+  }
+  
+  if (restaurant.websiteUri) {
+    processedData.website = restaurant.websiteUri;
+  }
+  
+  if (restaurant.googleMapsUri) {
+    processedData.googleMapsUri = restaurant.googleMapsUri;
+  }
+  
+  return processedData;
 }; 
