@@ -75,9 +75,7 @@ export const joinSession = async (sessionId, userId) => {
     swipes: {},
     ready: false,
     personalDeck: userDeck,
-    currentIndex: 0,
-    swipeBatch: 1,
-    batchSwipeCount: 0
+    currentIndex: 0
   });
   
   return true;
@@ -92,148 +90,137 @@ export const getSession = (sessionId, callback) => {
   });
 };
 
-// Record a swipe with batch system
+// Record a swipe with simplified matching system
 export const recordSwipe = async (sessionId, userId, restaurantId, direction) => {
+  console.log('🔥 Recording swipe:', { sessionId, userId, restaurantId, direction });
+  
   const userRef = ref(database, `sessions/${sessionId}/users/${userId}`);
   const userSnapshot = await new Promise((resolve) => {
     onValue(userRef, resolve, { onlyOnce: true });
   });
   
   const userData = userSnapshot.val();
-  const currentBatchCount = (userData?.batchSwipeCount || 0) + 1;
-  const currentBatch = userData?.swipeBatch || 1;
+  const currentIndex = (userData?.currentIndex || 0) + 1;
   
   // Record the swipe
   const swipeRef = ref(database, `sessions/${sessionId}/users/${userId}/swipes/${restaurantId}`);
   await set(swipeRef, {
     direction,
     timestamp: Date.now(),
-    batch: currentBatch
+    swipeNumber: currentIndex
   });
   
-  // Update batch count and current index
+  // Update user's current index
   const updates = {};
-  updates[`sessions/${sessionId}/users/${userId}/batchSwipeCount`] = currentBatchCount;
-  updates[`sessions/${sessionId}/users/${userId}/currentIndex`] = (userData?.currentIndex || 0) + 1;
+  updates[`sessions/${sessionId}/users/${userId}/currentIndex`] = currentIndex;
+  await update(ref(database), updates);
   
-  // If completed 5 swipes in this batch, check for matches from all previous batches
-  if (currentBatchCount >= 5) {
-    updates[`sessions/${sessionId}/users/${userId}/swipeBatch`] = currentBatch + 1;
-    updates[`sessions/${sessionId}/users/${userId}/batchSwipeCount`] = 0;
-    
-    // Check for matches if it's a right swipe and batch is complete
-    if (direction === 'right') {
-      await checkForBatchMatches(sessionId, restaurantId, currentBatch);
-    }
+  console.log('✅ Swipe recorded. Current index:', currentIndex);
+  
+  // Check for matches every 3 swipes (but not immediately on first swipe)
+  if (currentIndex >= 3 && currentIndex % 3 === 0) {
+    console.log('🔍 Checking for matches after', currentIndex, 'swipes');
+    await checkForMatches(sessionId);
   }
   
-  await update(ref(database), updates);
+  // Also check for matches if this is a right swipe (more frequent checking)
+  if (direction === 'right' && currentIndex >= 2) {
+    console.log('💖 Right swipe detected, checking for matches');
+    await checkForMatches(sessionId);
+  }
 };
 
-// Check for matches between users
-const checkForMatches = async (sessionId, restaurantId) => {
+// Simplified match checking - looks for any matches across all swipes
+const checkForMatches = async (sessionId) => {
+  console.log('🔍 Starting match check for session:', sessionId);
+  
   return new Promise((resolve) => {
     const sessionRef = ref(database, `sessions/${sessionId}`);
     onValue(sessionRef, async (snapshot) => {
       const session = snapshot.val();
-      if (!session) return resolve();
-      
-      const users = Object.values(session.users || {});
-      const rightSwipes = users.filter(user => 
-        user.swipes && user.swipes[restaurantId] && user.swipes[restaurantId].direction === 'right'
-      );
-      
-      // If both users swiped right on the same restaurant
-      if (rightSwipes.length >= 2) {
-        const restaurant = session.restaurants.find(r => r.id === restaurantId);
-        if (restaurant) {
-          const matchRef = ref(database, `sessions/${sessionId}/matches`);
-          const newMatch = {
-            restaurantId,
-            restaurant,
-            timestamp: Date.now(),
-            users: rightSwipes.map(u => u.id)
-          };
-          
-          await push(matchRef, newMatch);
-          
-          // Update session status
-          const statusRef = ref(database, `sessions/${sessionId}/status`);
-          await set(statusRef, 'matched');
-        }
+      if (!session) {
+        console.log('❌ No session found');
+        return resolve();
       }
       
-      resolve();
-    }, { onlyOnce: true });
-  });
-};
-
-// Check for matches after a batch is completed (5 swipes)
-const checkForBatchMatches = async (sessionId, restaurantId, completedBatch) => {
-  return new Promise((resolve) => {
-    const sessionRef = ref(database, `sessions/${sessionId}`);
-    onValue(sessionRef, async (snapshot) => {
-      const session = snapshot.val();
-      if (!session) return resolve();
-      
       const users = Object.values(session.users || {});
+      console.log('👥 Users in session:', users.length);
       
-      // Check if both users have completed the same batch
-      const usersCompletedBatch = users.filter(user => 
-        (user.swipeBatch || 1) > completedBatch || 
-        ((user.swipeBatch || 1) === completedBatch && (user.batchSwipeCount || 0) >= 5)
-      );
+      if (users.length < 2) {
+        console.log('⏳ Need at least 2 users for matching');
+        return resolve();
+      }
       
-      if (usersCompletedBatch.length >= 2) {
-        // Look for matches in all swipes from completed batches
-        const allRestaurantIds = new Set();
-        users.forEach(user => {
-          if (user.swipes) {
-            Object.keys(user.swipes).forEach(id => {
-              const swipe = user.swipes[id];
-              if (swipe.batch <= completedBatch) {
-                allRestaurantIds.add(id);
-              }
-            });
-          }
-        });
+      // Get all restaurant IDs that have been swiped on
+      const allSwipedRestaurants = new Set();
+      users.forEach(user => {
+        if (user.swipes) {
+          Object.keys(user.swipes).forEach(restaurantId => {
+            allSwipedRestaurants.add(restaurantId);
+          });
+        }
+      });
+      
+      console.log('🍽️ Total restaurants swiped on:', allSwipedRestaurants.size);
+      
+      // Check each restaurant for matches
+      for (const restaurantId of allSwipedRestaurants) {
+        const rightSwipes = users.filter(user => 
+          user.swipes && 
+          user.swipes[restaurantId] && 
+          user.swipes[restaurantId].direction === 'right'
+        );
         
-        // Check each restaurant for matches
-        for (const restId of allRestaurantIds) {
-          const rightSwipes = users.filter(user => 
-            user.swipes && 
-            user.swipes[restId] && 
-            user.swipes[restId].direction === 'right' &&
-            user.swipes[restId].batch <= completedBatch
-          );
+        console.log(`🔍 Restaurant ${restaurantId}: ${rightSwipes.length} right swipes`);
+        
+        if (rightSwipes.length >= 2) {
+          console.log('🎉 MATCH FOUND for restaurant:', restaurantId);
           
-          if (rightSwipes.length >= 2) {
-            const restaurant = session.restaurants.find(r => r.id === restId);
-            if (restaurant) {
-              const matchRef = ref(database, `sessions/${sessionId}/matches`);
-              const newMatch = {
-                restaurantId: restId,
-                restaurant,
-                timestamp: Date.now(),
-                users: rightSwipes.map(u => u.id),
-                revealedAfterBatch: completedBatch
-              };
-              
-              await push(matchRef, newMatch);
-              
-              // Update session status
-              const statusRef = ref(database, `sessions/${sessionId}/status`);
-              await set(statusRef, 'matched');
-              break; // Only reveal first match found
+          // Find the restaurant data - check both session.restaurants and user personal decks
+          let restaurant = session.restaurants?.find(r => r.id === restaurantId);
+          
+          if (!restaurant) {
+            // If not found in session.restaurants, check user personal decks
+            for (const user of users) {
+              if (user.personalDeck) {
+                restaurant = user.personalDeck.find(r => r.id === restaurantId);
+                if (restaurant) break;
+              }
             }
           }
-        }
-      }
-      
-      resolve();
-    }, { onlyOnce: true });
-  });
-};
+          
+          if (restaurant) {
+            console.log('✅ Found restaurant data for match:', restaurant.name);
+            
+            const matchRef = ref(database, `sessions/${sessionId}/matches`);
+            const newMatch = {
+              restaurantId,
+              restaurant,
+              timestamp: Date.now(),
+              users: rightSwipes.map(u => u.id)
+            };
+            
+            await push(matchRef, newMatch);
+            
+            // Update session status
+            const statusRef = ref(database, `sessions/${sessionId}/status`);
+            await set(statusRef, 'matched');
+            
+            console.log('🎊 Match created and session status updated!');
+            break; // Only reveal first match found
+          } else {
+            console.log('❌ Could not find restaurant data for:', restaurantId);
+          }
+                 }
+       }
+       
+       resolve();
+     }, { onlyOnce: true });
+   });
+ };
+
+// Remove the old batch matching function since we're simplifying
+// const checkForBatchMatches = ... (removed)
 
 // Reset session with new restaurants
 export const resetSession = async (sessionId, newRestaurants) => {
