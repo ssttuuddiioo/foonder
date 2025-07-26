@@ -1,12 +1,14 @@
 # Deployment Guide
 
+⚠️ **SECURITY WARNING**: Never commit API keys to your repository. Always use environment variables and apply proper restrictions to your API keys in the Google Cloud Console.
+
 ## Environment Variables for Production
 
 When deploying to Netlify, you need to set these environment variables in your Netlify dashboard:
 
 ### Firebase Configuration
 ```
-VITE_FIREBASE_API_KEY=AIzaSyAkFWON93B5GU2C4V-xDoQdTYngBx3801k
+VITE_FIREBASE_API_KEY=your-firebase-api-key-here
 VITE_FIREBASE_AUTH_DOMAIN=foonder-7f9f7.firebaseapp.com
 VITE_FIREBASE_DATABASE_URL=https://foonder-7f9f7-default-rtdb.firebaseio.com
 VITE_FIREBASE_PROJECT_ID=foonder-7f9f7
@@ -17,8 +19,28 @@ VITE_FIREBASE_APP_ID=1:538428639841:web:948e2973bc08fbdea8b820
 
 ### Google Places API
 ```
-VITE_GOOGLE_PLACES_API_KEY=AIzaSyAcXWsAP9SSZRuS1nu4UOBIqECsx0xHb_8
+VITE_GOOGLE_PLACES_API_KEY=your-google-places-api-key-here
 ```
+
+## API Key Security Setup
+
+**CRITICAL**: Before deploying, secure your Google Maps Platform API keys:
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+2. Select your foonder project
+3. For each API key, click to edit and apply these restrictions:
+   - **Application restrictions**: HTTP referrers (web sites)
+   - **Website restrictions**: Add your domains:
+     ```
+     https://your-domain.com/*
+     https://your-app.netlify.app/*
+     http://localhost:5173/*
+     ```
+   - **API restrictions**: Limit to only the APIs you use:
+     - Maps JavaScript API
+     - Places API
+     - Places API (New)
+     - Geocoding API
 
 ## Netlify Deployment Steps
 
@@ -26,7 +48,7 @@ VITE_GOOGLE_PLACES_API_KEY=AIzaSyAcXWsAP9SSZRuS1nu4UOBIqECsx0xHb_8
 2. Connect your GitHub repository
 3. Set build command: `npm run build`
 4. Set publish directory: `dist`
-5. Add all environment variables above in Site settings → Environment variables
+5. **IMPORTANT**: Add all environment variables above in Site settings → Environment variables (use your actual API key values)
 6. Deploy!
 
 ## Local Development
