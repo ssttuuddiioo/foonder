@@ -285,7 +285,7 @@ const Session = () => {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <div className="bg-white shadow-sm p-4">
+      <div className="bg-white shadow-sm p-3">
         <div className="max-w-md mx-auto flex items-center justify-center">
           <div className="text-sm text-gray-600">
             {session.users && session.users[userId] ? 
@@ -297,7 +297,7 @@ const Session = () => {
       </div>
 
       {/* Restaurant Card */}
-      <div className="flex-1 flex items-center justify-center p-4">
+      <div className="flex-1 flex items-center justify-center p-3">
         {currentRestaurant ? (
           <RestaurantCard 
             restaurant={currentRestaurant}
@@ -311,29 +311,29 @@ const Session = () => {
       </div>
 
       {/* Instructions */}
-      <div className="bg-white border-t p-4">
+      <div className="bg-white border-t p-3">
         <div className="max-w-md mx-auto text-center">
           <p className="text-sm text-gray-600 mb-2">
             Swipe right to like, left to pass
           </p>
-          <div className="flex justify-center space-x-8">
+          <div className="flex justify-center space-x-6">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                <span className="text-red-600 text-sm">✕</span>
+              <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center">
+                <span className="text-red-600 text-xs">✕</span>
               </div>
-              <span className="text-sm text-gray-600">Pass</span>
+              <span className="text-xs text-gray-600">Pass</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                <span className="text-green-600 text-sm">♥</span>
+              <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
+                <span className="text-green-600 text-xs">♥</span>
               </div>
-              <span className="text-sm text-gray-600">Like</span>
+              <span className="text-xs text-gray-600">Like</span>
             </div>
           </div>
         </div>
       </div>
 
-
+ 
     </div>
   );
 };

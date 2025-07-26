@@ -86,25 +86,25 @@ const WaitingScreen = ({ session, userId, onMarkReady }) => {
     <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
       <div className="max-w-lg w-full">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-6">
-            <div className="bg-red-500 p-4 rounded-full">
-              <Heart className="w-10 h-10 text-white" />
+        <div className="text-center mb-5">
+          <div className="flex items-center justify-center mb-3">
+            <div className="bg-red-500 p-3 rounded-full">
+              <Heart className="w-8 h-8 text-white" />
             </div>
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-3">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
             {getMainMessage()}
           </h1>
-          <p className="text-xl text-gray-600">
+          <p className="text-base text-gray-600">
             {getSubMessage()}
           </p>
         </div>
 
         {/* Session Info Card */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 mb-6">
+        <div className="bg-white rounded-2xl shadow-xl p-5 mb-4">
           {/* Location Info */}
-          <div className="flex items-center gap-3 mb-6 p-4 bg-red-50 rounded-xl">
-            <MapPin className="w-6 h-6 text-red-500" />
+          <div className="flex items-center gap-3 mb-4 p-3 bg-red-50 rounded-xl">
+            <MapPin className="w-5 h-5 text-red-500" />
             <div>
               <p className="font-semibold text-gray-900">{session?.zipCode || 'Your Location'}</p>
               <p className="text-sm text-gray-600">{session?.restaurants?.length || 0} restaurants found • 4.2+ stars</p>
@@ -113,22 +113,22 @@ const WaitingScreen = ({ session, userId, onMarkReady }) => {
 
           {/* Share Link Section - Only show to session creator */}
           {isSessionCreator && (
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-lg font-semibold text-gray-900">Share with a friend</h3>
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-base font-semibold text-gray-900">Share with a friend</h3>
                 <span className="text-sm text-red-600 font-medium">👫 {users.length}/2 joined</span>
               </div>
               
-              <div className="flex gap-3">
+              <div className="flex gap-2">
                 <input
                   type="text"
                   value={shareUrl}
                   readOnly
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-sm font-mono"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-xs font-mono"
                 />
                 <button
                   onClick={handleCopyLink}
-                  className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
+                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-1 ${
                     copied
                       ? 'bg-green-100 text-green-700 border border-green-200'
                       : 'bg-red-500 hover:bg-red-600 text-white'
@@ -136,12 +136,12 @@ const WaitingScreen = ({ session, userId, onMarkReady }) => {
                 >
                   {copied ? (
                     <>
-                      <Check className="w-5 h-5" />
-                      <span className="hidden sm:inline">Copied!</span>
+                      <Check className="w-4 h-4" />
+                      <span className="hidden sm:inline">Done!</span>
                     </>
                   ) : (
                     <>
-                      <Copy className="w-5 h-5" />
+                      <Copy className="w-4 h-4" />
                       <span className="hidden sm:inline">Copy</span>
                     </>
                   )}
@@ -152,8 +152,8 @@ const WaitingScreen = ({ session, userId, onMarkReady }) => {
 
           {/* Welcome message for link joiners */}
           {!isSessionCreator && users.length >= 2 && (
-            <div className="mb-6 p-4 bg-blue-50 rounded-xl">
-              <h3 className="font-semibold text-blue-900 mb-2">How this works</h3>
+            <div className="mb-4 p-3 bg-blue-50 rounded-xl">
+              <h3 className="font-semibold text-blue-900 mb-1">How this works</h3>
               <div className="text-sm text-blue-700 space-y-1">
                 <p>• You'll both swipe through restaurant cards</p>
                 <p>• Swipe right (❤️) for places you'd like to try</p>
@@ -164,25 +164,25 @@ const WaitingScreen = ({ session, userId, onMarkReady }) => {
           )}
 
           {/* Users Status */}
-          <div className="space-y-3">
-            <h4 className="font-semibold text-gray-900">Participants</h4>
+          <div className="space-y-2">
+            <h4 className="font-semibold text-gray-900 text-sm">Participants</h4>
             
             {/* Current User */}
-            <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                <span className="font-medium text-gray-900">You</span>
-              </div>
+            <div className="flex items-center justify-between p-2 bg-red-50 rounded-lg">
               <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                <span className="font-medium text-gray-900 text-sm">You</span>
+              </div>
+              <div className="flex items-center gap-1">
                 {isCurrentUserReady ? (
                   <>
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                    <span className="text-sm text-green-600 font-medium">Ready</span>
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-xs text-green-600 font-medium">Ready</span>
                   </>
                 ) : (
                   <>
-                    <Clock className="w-5 h-5 text-gray-400" />
-                    <span className="text-sm text-gray-500">Not ready</span>
+                    <Clock className="w-4 h-4 text-gray-400" />
+                    <span className="text-xs text-gray-500">Not ready</span>
                   </>
                 )}
               </div>
@@ -190,21 +190,21 @@ const WaitingScreen = ({ session, userId, onMarkReady }) => {
 
             {/* Other Users */}
             {otherUsers.map((user, index) => (
-              <div key={user.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <span className="font-medium text-gray-900">Friend {index + 1}</span>
-                </div>
+              <div key={user.id} className="flex items-center justify-between p-2 bg-green-50 rounded-lg">
                 <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="font-medium text-gray-900 text-sm">Friend {index + 1}</span>
+                </div>
+                <div className="flex items-center gap-1">
                   {user.ready ? (
                     <>
-                      <CheckCircle className="w-5 h-5 text-green-500" />
-                      <span className="text-sm text-green-600 font-medium">Ready</span>
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      <span className="text-xs text-green-600 font-medium">Ready</span>
                     </>
                   ) : (
                     <>
-                      <Clock className="w-5 h-5 text-gray-400" />
-                      <span className="text-sm text-gray-500">Not ready</span>
+                      <Clock className="w-4 h-4 text-gray-400" />
+                      <span className="text-xs text-gray-500">Not ready</span>
                     </>
                   )}
                 </div>
@@ -213,35 +213,35 @@ const WaitingScreen = ({ session, userId, onMarkReady }) => {
 
             {/* Empty Slots */}
             {users.length < 2 && (
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
-                  <span className="text-gray-500">Waiting for friend...</span>
+              <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+                  <span className="text-gray-500 text-sm">Waiting for friend...</span>
                 </div>
-                <Share2 className="w-5 h-5 text-gray-300" />
+                <Share2 className="w-4 h-4 text-gray-300" />
               </div>
             )}
           </div>
 
           {/* Ready Button */}
           {shouldShowReadyButton && (
-            <div className="mt-6 pt-6 border-t border-gray-100">
+            <div className="mt-4 pt-3 border-t border-gray-100">
               <button
                 onClick={onMarkReady}
-                className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-4 px-6 rounded-xl transition-colors duration-200 flex items-center justify-center gap-3"
+                className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-4 rounded-xl transition-colors duration-200 flex items-center justify-center gap-2"
               >
-                <CheckCircle className="w-6 h-6" />
-                <span className="text-lg">I'm Ready to Swipe!</span>
+                <CheckCircle className="w-5 h-5" />
+                <span>I'm Ready to Swipe!</span>
               </button>
             </div>
           )}
 
           {/* Waiting Message */}
           {users.length >= 2 && isCurrentUserReady && !allUsersReady && (
-            <div className="mt-6 pt-6 border-t border-gray-100">
-              <div className="flex items-center justify-center gap-3 bg-green-100 text-green-700 px-6 py-4 rounded-xl">
-                <CheckCircle className="w-6 h-6" />
-                <span className="font-medium text-lg">You're ready! Waiting for others...</span>
+            <div className="mt-4 pt-3 border-t border-gray-100">
+              <div className="flex items-center justify-center gap-2 bg-green-100 text-green-700 px-4 py-3 rounded-xl">
+                <CheckCircle className="w-5 h-5" />
+                <span className="font-medium">You're ready! Waiting for others...</span>
               </div>
             </div>
           )}
@@ -250,7 +250,7 @@ const WaitingScreen = ({ session, userId, onMarkReady }) => {
         {/* Footer */}
         <div className="text-center">
           <p className="text-sm text-gray-500">
-            Session expires in 24 hours • No personal data stored
+            Sessions expire after 24 hours • No personal data stored
           </p>
         </div>
       </div>
